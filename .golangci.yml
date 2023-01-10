@@ -1,0 +1,21 @@
+linters:
+  enable-all: true
+  disable:
+    # Deprecated
+    - structcheck
+    - ifshort
+    - interfacer
+    - exhaustivestruct
+    - varcheck
+    - golint
+    - deadcode
+    - nosnakecase
+    - scopelint
+    - maligned
+    # Does not support go v1.18
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+    # Fix later
+    - wrapcheck
