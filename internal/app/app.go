@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tutorin-tech/tit-backend/internal/controllers"
 	"github.com/tutorin-tech/tit-backend/internal/core"
+	"github.com/tutorin-tech/tit-backend/internal/services"
 )
 
 func Run() {
 	conf := core.NewConfig()
 	log := core.NewLogger(conf)
-	app := fiber.New()
 
 	db := core.NewDatabase(conf)
 	defer func() {
@@ -24,6 +25,11 @@ func Run() {
 	}
 
 	log.Info().Msg("Database connection established successfully")
+
+	userService := services.NewUserService(db, log, conf)
+
+	app := fiber.New()
+	app.Mount("/auth", controllers.NewAuthController(db, log, userService))
 
 	address := fmt.Sprintf(":%d", conf.Port)
 

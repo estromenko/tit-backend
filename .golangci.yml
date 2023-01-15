@@ -19,3 +19,9 @@ linters:
     - wastedassign
     # Fix later
     - wrapcheck
+linters-settings:
+  varnamelen:
+    ignore-names:
+      - c
+      - db
+      - tx
