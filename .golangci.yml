@@ -19,6 +19,7 @@ linters:
     - wastedassign
     # Fix later
     - wrapcheck
+    - exhaustruct
 linters-settings:
   varnamelen:
     ignore-names:
