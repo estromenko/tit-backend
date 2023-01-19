@@ -13,16 +13,10 @@ func Run() {
 	conf := core.NewConfig()
 	log := core.NewLogger(conf)
 
-	db := core.NewDatabase(conf)
+	db := core.NewDatabase(conf, log)
 	defer func() {
 		_ = db.Close()
 	}()
-
-	if err := db.Ping(); err != nil {
-		log.Err(err).Msg("Database ping failed")
-
-		return
-	}
 
 	log.Info().Msg("Database connection established successfully")
 
