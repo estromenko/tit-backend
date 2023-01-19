@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
@@ -30,7 +28,7 @@ func (w *whoAmIController) whoAmI() fiber.Handler {
 			Where("id = ?", userID).
 			Scan(c.UserContext(), user)
 		if err != nil {
-			return c.SendStatus(http.StatusForbidden)
+			return fiber.ErrForbidden
 		}
 
 		return c.JSON(user)

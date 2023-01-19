@@ -3,8 +3,6 @@ package controllers
 import (
 	"database/sql"
 	"errors"
-	"net/http"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
@@ -31,7 +29,7 @@ func (a *authController) login() fiber.Handler { //nolint:funlen
 
 		validate := validator.New()
 		if err := validate.Struct(requestData); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
@@ -44,18 +42,18 @@ func (a *authController) login() fiber.Handler { //nolint:funlen
 			Scan(c.UserContext(), user)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 					"error": "Wrong email or password",
 				})
 			}
 
 			a.logger.Err(err).Msg("login user selecting")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		if !user.IsActive {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Wrong email or password",
 			})
 		}
@@ -64,11 +62,11 @@ func (a *authController) login() fiber.Handler { //nolint:funlen
 		if err != nil {
 			a.logger.Err(err).Msg("login password check")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		if !passwordsMatch {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Wrong email or password",
 			})
 		}
@@ -77,7 +75,7 @@ func (a *authController) login() fiber.Handler { //nolint:funlen
 		if err != nil {
 			a.logger.Err(err).Msg("login token creation")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		user.Password = ""
@@ -95,13 +93,13 @@ func (a *authController) registration() fiber.Handler {
 
 		validate := validator.New()
 		if err := validate.Struct(user); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
 
 		if a.userService.UserExists(c.UserContext(), user.Email) {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "User with such email already exists",
 			})
 		}
@@ -110,7 +108,7 @@ func (a *authController) registration() fiber.Handler {
 		if err != nil {
 			a.logger.Err(err).Msg("registration password hash")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		user.PasswordHash = passwordHash
@@ -121,7 +119,7 @@ func (a *authController) registration() fiber.Handler {
 		if err != nil {
 			a.logger.Err(err).Msg("registration user insert")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		token, err := a.userService.CreateToken(user)
@@ -130,13 +128,13 @@ func (a *authController) registration() fiber.Handler {
 
 			a.logger.Err(err).Msg("registration token creation")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		if err := tx.Commit(); err != nil {
 			a.logger.Err(err).Msg("registration transaction commit")
 
-			return c.SendStatus(http.StatusInternalServerError)
+			return fiber.ErrInternalServerError
 		}
 
 		user.Password = ""
