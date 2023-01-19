@@ -30,6 +30,7 @@ func Run() {
 
 	app := fiber.New()
 	app.Mount("/auth", controllers.NewAuthController(db, log, userService))
+	app.Mount("/api", controllers.NewWhoAmIController(db, conf, log))
 
 	address := fmt.Sprintf(":%d", conf.Port)
 
