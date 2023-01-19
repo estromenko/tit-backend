@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/matthewhartstonge/argon2"
@@ -10,6 +11,12 @@ import (
 	"github.com/tutorin-tech/tit-backend/internal/models"
 	"github.com/uptrace/bun"
 )
+
+type TokenClaims struct {
+	jwt.RegisteredClaims
+
+	UserID uint64 `json:"userId,omitempty"`
+}
 
 type UserService struct {
 	db     *bun.DB
@@ -30,7 +37,16 @@ func (u *UserService) UserExists(ctx context.Context, email string) bool {
 }
 
 func (u *UserService) CreateToken(user *models.User) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"user": user})
+	expiresAt := time.Now().Add(time.Hour * time.Duration(u.conf.JWTExpireHours))
+
+	claims := TokenClaims{
+		UserID: user.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(u.conf.SecretKey))
 
 	return tokenString, err
