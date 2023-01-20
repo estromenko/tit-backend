@@ -6,15 +6,14 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog"
+	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/models"
 	"github.com/tutorin-tech/tit-backend/internal/services"
-	"github.com/uptrace/bun"
 )
 
 type authController struct {
-	db          *bun.DB
-	logger      *zerolog.Logger
+	db          *core.Database
+	logger      *core.Logger
 	userService *services.UserService
 }
 
@@ -146,8 +145,8 @@ func (a *authController) registration() fiber.Handler {
 }
 
 func NewAuthController(
-	db *bun.DB,
-	logger *zerolog.Logger,
+	db *core.Database,
+	logger *core.Logger,
 	userService *services.UserService,
 ) *fiber.App {
 	controller := authController{db, logger, userService}

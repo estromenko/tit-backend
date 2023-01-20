@@ -6,16 +6,14 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/rs/zerolog"
 	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/middleware"
 	"github.com/tutorin-tech/tit-backend/internal/models"
-	"github.com/uptrace/bun"
 )
 
 type whoAmIController struct {
-	db     *bun.DB
-	logger *zerolog.Logger
+	db     *core.Database
+	logger *core.Logger
 }
 
 func (w *whoAmIController) whoAmI() fiber.Handler {
@@ -44,7 +42,7 @@ func (w *whoAmIController) whoAmI() fiber.Handler {
 	}
 }
 
-func NewWhoAmIController(db *bun.DB, conf *core.Config, logger *zerolog.Logger) *fiber.App {
+func NewWhoAmIController(db *core.Database, conf *core.Config, logger *core.Logger) *fiber.App {
 	controller := whoAmIController{db, logger}
 
 	app := fiber.New()

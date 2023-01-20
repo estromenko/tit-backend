@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 )
 
-func NewDatabase(conf *Config, log *zerolog.Logger) *bun.DB {
+type Database = bun.DB
+
+func NewDatabase(conf *Config, log *Logger) *Database {
 	sqlDB := sql.OpenDB(pgdriver.NewConnector(
 		pgdriver.WithAddr(fmt.Sprintf("%s:%d", conf.PgHost, conf.PgPort)),
 		pgdriver.WithUser(conf.PgUser),

@@ -6,7 +6,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func NewLogger(conf *Config) *zerolog.Logger {
+type Logger = zerolog.Logger
+
+func NewLogger(conf *Config) *Logger {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 	if conf.Debug {

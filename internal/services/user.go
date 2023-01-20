@@ -6,10 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/matthewhartstonge/argon2"
-	"github.com/rs/zerolog"
 	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/models"
-	"github.com/uptrace/bun"
 )
 
 type TokenClaims struct {
@@ -19,12 +17,12 @@ type TokenClaims struct {
 }
 
 type UserService struct {
-	db     *bun.DB
-	logger *zerolog.Logger
+	db     *core.Database
+	logger *core.Logger
 	conf   *core.Config
 }
 
-func NewUserService(db *bun.DB, logger *zerolog.Logger, conf *core.Config) *UserService {
+func NewUserService(db *core.Database, logger *core.Logger, conf *core.Config) *UserService {
 	return &UserService{db, logger, conf}
 }
 
