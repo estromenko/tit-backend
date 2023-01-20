@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"database/sql"
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
@@ -28,7 +31,13 @@ func (w *whoAmIController) whoAmI() fiber.Handler {
 			Where("id = ? AND is_active = TRUE", userID).
 			Scan(c.UserContext(), user)
 		if err != nil {
-			return fiber.ErrForbidden
+			if errors.Is(err, sql.ErrNoRows) {
+				return fiber.ErrForbidden
+			}
+
+			w.logger.Err(err).Msg("whoami user selecting")
+
+			return fiber.ErrInternalServerError
 		}
 
 		return c.JSON(user)

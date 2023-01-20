@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"errors"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
