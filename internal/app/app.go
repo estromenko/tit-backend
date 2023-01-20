@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/tutorin-tech/tit-backend/internal/controllers"
 	"github.com/tutorin-tech/tit-backend/internal/core"
@@ -25,6 +26,7 @@ func Run() {
 
 	app := fiber.New()
 	app.Use(recover.New())
+	app.Use(logger.New())
 
 	app.Mount("/auth", controllers.NewAuthController(db, log, userService))
 	app.Mount("/api", controllers.NewWhoAmIController(db, conf, log))
