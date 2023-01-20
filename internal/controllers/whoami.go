@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/tutorin-tech/tit-backend/internal/core"
+	"github.com/tutorin-tech/tit-backend/internal/middleware"
 	"github.com/tutorin-tech/tit-backend/internal/models"
 	"github.com/uptrace/bun"
 )
@@ -40,11 +40,7 @@ func NewWhoAmIController(db *bun.DB, conf *core.Config, logger *zerolog.Logger) 
 
 	app := fiber.New()
 
-	app.Use(jwtware.New(jwtware.Config{
-		ContextKey:    "user",
-		SigningMethod: jwt.SigningMethodHS256.Name,
-		SigningKey:    []byte(conf.SecretKey),
-	}))
+	app.Use(middleware.NewRequireAuth(conf))
 
 	app.Get("/whoami", controller.whoAmI())
 
