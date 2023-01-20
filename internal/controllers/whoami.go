@@ -25,7 +25,7 @@ func (w *whoAmIController) whoAmI() fiber.Handler {
 
 		err := w.db.NewSelect().
 			Model(new(models.User)).
-			Where("id = ?", userID).
+			Where("id = ? AND is_active = TRUE", userID).
 			Scan(c.UserContext(), user)
 		if err != nil {
 			return fiber.ErrForbidden
