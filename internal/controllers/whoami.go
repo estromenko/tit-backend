@@ -41,6 +41,7 @@ func NewWhoAmIController(db *bun.DB, conf *core.Config, logger *zerolog.Logger) 
 	app := fiber.New()
 
 	app.Use(middleware.NewRequireAuth(conf))
+	app.Use(middleware.NewIsActive(db, logger))
 
 	app.Get("/whoami", controller.whoAmI())
 
