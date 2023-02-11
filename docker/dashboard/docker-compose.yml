@@ -1,0 +1,4 @@
+services:
+  dashboard:
+    image: tit-dashboard:latest
+    build: .

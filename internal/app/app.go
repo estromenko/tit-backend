@@ -24,12 +24,21 @@ func Run() {
 
 	userService := services.NewUserService(db, log, conf)
 
+	dashboardService, err := services.NewDashboardService()
+	if err != nil {
+		log.Err(err).Msgf("Failed to create dashboard service: %s", err.Error())
+		return
+	}
+
 	app := fiber.New()
 	app.Use(recover.New())
 	app.Use(logger.New())
 
 	app.Mount("/auth", controllers.NewAuthController(db, log, userService))
 	app.Mount("/api", controllers.NewWhoAmIController(db, conf, log))
+	app.Mount("/api/dashboard", controllers.NewDashboardController(
+		db, log, userService, dashboardService, conf,
+	))
 
 	address := fmt.Sprintf(":%d", conf.Port)
 

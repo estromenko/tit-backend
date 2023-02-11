@@ -10,6 +10,7 @@ type User struct {
 	PasswordHash string `bun:"password_hash,notnull" json:"-"`
 	IsSuperUser  bool   `bun:"is_super_user,notnull" json:"isSuperUser"`
 	IsActive     bool   `bun:"is_active,notnull"`
+	Port         *uint  `bun:"port" json:"port"`
 
 	Password string `bun:"-" json:"password,omitempty" validate:"required,min=8,max=256"`
 	Token    string `bun:"-" json:"token,omitempty"`

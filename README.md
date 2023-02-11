@@ -30,6 +30,11 @@ $ make install-migrate
 $ migrate -source file://./migrations -database postgres://postgres:secret@localhost:5432/tutorintech\?sslmode=disable up
 ```
 
+- Build required images:
+```bash
+$ docker compose -f docker/dashboard/docker-compose.yml build
+```
+
 - Run application. You can configure app by passing env variables directly or create .env 
 file in project root.
 
