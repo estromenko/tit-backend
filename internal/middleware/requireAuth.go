@@ -12,5 +12,16 @@ func NewRequireAuth(conf *core.Config) fiber.Handler {
 		ContextKey:    "user",
 		SigningMethod: jwt.SigningMethodHS256.Name,
 		SigningKey:    []byte(conf.SecretKey),
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			if err.Error() == "Missing or malformed JWT" {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": "Missing or malformed JWT",
+				})
+			}
+
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid or expired JWT",
+			})
+		},
 	})
 }

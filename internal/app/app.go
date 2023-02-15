@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/tutorin-tech/tit-backend/internal/controllers"
 	"github.com/tutorin-tech/tit-backend/internal/core"
+	"github.com/tutorin-tech/tit-backend/internal/middleware"
 	"github.com/tutorin-tech/tit-backend/internal/services"
 )
 
@@ -27,10 +28,13 @@ func Run() {
 	dashboardService, err := services.NewDashboardService()
 	if err != nil {
 		log.Err(err).Msgf("Failed to create dashboard service: %s", err.Error())
+
 		return
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: middleware.NewErrorHandlerMiddleware(),
+	})
 	app.Use(recover.New())
 	app.Use(logger.New())
 
