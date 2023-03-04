@@ -1,14 +1,10 @@
 package controllers
 
 import (
-	"database/sql"
-	"errors"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/middleware"
-	"github.com/tutorin-tech/tit-backend/internal/models"
 	"github.com/tutorin-tech/tit-backend/internal/services"
 )
 
@@ -22,21 +18,10 @@ type dashboardController struct {
 func (d *dashboardController) dashboard() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token, _ := c.Locals("user").(*jwt.Token)
-		claims, _ := token.Claims.(jwt.MapClaims)
-		userID, _ := claims["userId"].(float64)
 
-		user := new(models.User)
-
-		err := d.db.NewSelect().
-			Model(new(models.User)).
-			Where("id = ?", userID).
-			Scan(c.UserContext(), user)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return fiber.ErrForbidden
-			}
-
-			d.logger.Err(err).Msg("whoami user selecting")
+		user, err := d.userService.GetUserByToken(c.UserContext(), token)
+		if err != nil || user == nil {
+			d.logger.Err(err).Msg("dashboard user selecting")
 
 			return fiber.ErrInternalServerError
 		}

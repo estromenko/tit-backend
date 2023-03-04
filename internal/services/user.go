@@ -2,12 +2,19 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/matthewhartstonge/argon2"
 	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/models"
+)
+
+var (
+	errCannotSelectUser = errors.New("cannot select user from database")
+	errNoUserRound      = errors.New("no user found")
 )
 
 type TokenClaims struct {
@@ -64,4 +71,25 @@ func (u *UserService) HashPassword(password string) (string, error) {
 
 func (u *UserService) CheckPassword(user *models.User, password string) (bool, error) {
 	return argon2.VerifyEncoded([]byte(password), []byte(user.PasswordHash))
+}
+
+func (u *UserService) GetUserByToken(ctx context.Context, token *jwt.Token) (*models.User, error) {
+	claims, _ := token.Claims.(jwt.MapClaims)
+	userID, _ := claims["userId"].(float64)
+
+	user := new(models.User)
+
+	err := u.db.NewSelect().
+		Model(new(models.User)).
+		Where("id = ?", userID).
+		Scan(ctx, user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errNoUserRound
+		}
+
+		return nil, errCannotSelectUser
+	}
+
+	return user, nil
 }
