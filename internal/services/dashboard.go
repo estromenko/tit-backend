@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,11 @@ import (
 )
 
 var errDashboardIsStopped = errors.New("dashboard is stopped")
+
+type DashboardData struct {
+	Port     uint16 `json:"port"`
+	Password string `json:"password"`
+}
 
 type DashboardService struct {
 	dockerClient *client.Client
@@ -30,7 +36,20 @@ func NewDashboardService() (*DashboardService, error) {
 	return &DashboardService{dockerClient}, nil
 }
 
-func (d *DashboardService) StartDashboard(ctx context.Context, userID uint64) (int, error) {
+func (d *DashboardService) getPasswordFromContainer(name string) (string, error) {
+	command := exec.Command("docker", "exec", name, "cat", "/password.txt")
+
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	password := strings.ReplaceAll(string(output), "\n", "")
+
+	return password, nil
+}
+
+func (d *DashboardService) StartDashboard(ctx context.Context, userID uint64) (*DashboardData, error) {
 	response, err := d.dockerClient.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -48,17 +67,17 @@ func (d *DashboardService) StartDashboard(ctx context.Context, userID uint64) (i
 		fmt.Sprintf("tit_dashboard_%d", userID),
 	)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	err = d.dockerClient.ContainerStart(ctx, response.ID, types.ContainerStartOptions{})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	containerData, err := d.dockerClient.ContainerInspect(ctx, response.ID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	ports := make([]string, 0, len(containerData.HostConfig.PortBindings))
@@ -68,10 +87,20 @@ func (d *DashboardService) StartDashboard(ctx context.Context, userID uint64) (i
 
 	port, _ := strconv.Atoi(ports[0])
 
-	return port, nil
+	password, err := d.getPasswordFromContainer(containerData.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	dashboardData := &DashboardData{
+		Port:     uint16(port),
+		Password: password,
+	}
+
+	return dashboardData, nil
 }
 
-func (d *DashboardService) GetDashboardPort(ctx context.Context, userID uint64) (int, error) {
+func (d *DashboardService) GetDashboard(ctx context.Context, userID uint64) (*DashboardData, error) {
 	containers, err := d.dockerClient.ContainerList(ctx, types.ContainerListOptions{
 		Filters: filters.NewArgs(filters.KeyValuePair{
 			Key:   "name",
@@ -80,20 +109,33 @@ func (d *DashboardService) GetDashboardPort(ctx context.Context, userID uint64) 
 		All: true,
 	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if len(containers) >= 1 {
 		startedContainer := containers[0]
 
 		if !strings.Contains(startedContainer.Status, "Up") {
-			return 0, errDashboardIsStopped
+			return nil, errDashboardIsStopped
 		}
 
-		port := startedContainer.Ports[0].PublicPort
+		containerData, err := d.dockerClient.ContainerInspect(ctx, startedContainer.ID)
+		if err != nil {
+			return nil, err
+		}
 
-		return int(port), nil
+		password, err := d.getPasswordFromContainer(containerData.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		dashboardData := &DashboardData{
+			Port:     startedContainer.Ports[0].PublicPort,
+			Password: password,
+		}
+
+		return dashboardData, nil
 	}
 
-	return 0, nil
+	return nil, errDashboardIsStopped
 }
