@@ -27,7 +27,7 @@ func (d *dashboardController) dashboard() fiber.Handler {
 		}
 
 		dashboardData, err := d.dashboardService.GetDashboard(c.UserContext(), user.ID)
-		if err != nil {
+		if err != nil && err != services.ErrDashboardIsStopped {
 			d.logger.Err(err).Msg("dashboard port receiving")
 
 			return fiber.ErrInternalServerError

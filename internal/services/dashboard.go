@@ -16,7 +16,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-var errDashboardIsStopped = errors.New("dashboard is stopped")
+var ErrDashboardIsStopped = errors.New("dashboard is stopped")
 
 type DashboardData struct {
 	Port     uint16 `json:"port"`
@@ -116,7 +116,7 @@ func (d *DashboardService) GetDashboard(ctx context.Context, userID uint64) (*Da
 		startedContainer := containers[0]
 
 		if !strings.Contains(startedContainer.Status, "Up") {
-			return nil, errDashboardIsStopped
+			return nil, ErrDashboardIsStopped
 		}
 
 		containerData, err := d.dockerClient.ContainerInspect(ctx, startedContainer.ID)
@@ -137,5 +137,5 @@ func (d *DashboardService) GetDashboard(ctx context.Context, userID uint64) (*Da
 		return dashboardData, nil
 	}
 
-	return nil, errDashboardIsStopped
+	return nil, ErrDashboardIsStopped
 }
