@@ -1,0 +1,9 @@
+.vscode
+.idea
+.tmp
+*.mo
+*.swp
+.env*
+.air.toml
+.golangci.yml
+README.md

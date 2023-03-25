@@ -41,3 +41,11 @@ file in project root.
 ```bash
 $ make dev
 ```
+
+### Production
+
+To deploy the app in production environment you should use prepared `docker-compose.yml` file:
+```bash
+$ cd docker
+$ docker-compose up -d --build
+```
