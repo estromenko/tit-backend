@@ -26,7 +26,7 @@ func Run() {
 
 	userService := services.NewUserService(db, log, conf)
 
-	dashboardService, err := services.NewDashboardService()
+	dashboardService, err := services.NewDashboardService(db, conf)
 	if err != nil {
 		log.Err(err).Msgf("Failed to create dashboard service: %s", err.Error())
 

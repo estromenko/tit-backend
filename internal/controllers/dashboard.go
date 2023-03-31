@@ -26,25 +26,19 @@ func (d *dashboardController) dashboard() fiber.Handler {
 			return fiber.ErrInternalServerError
 		}
 
-		dashboardData, err := d.dashboardService.GetDashboard(c.UserContext(), user.ID)
-		if err != nil && err != services.ErrDashboardIsStopped {
-			d.logger.Err(err).Msg("dashboard port receiving")
+		isDashboardRunning := d.dashboardService.IsDashboardRunning(c.UserContext(), user)
+		if !isDashboardRunning {
+			if err := d.dashboardService.StartDashboard(c.UserContext(), user); err != nil {
+				d.logger.Err(err).Msg("dashboard starting")
 
-			return fiber.ErrInternalServerError
+				return fiber.ErrInternalServerError
+			}
 		}
 
-		if dashboardData != nil {
-			return c.JSON(dashboardData)
-		}
-
-		dashboardData, err = d.dashboardService.StartDashboard(c.UserContext(), user.ID)
-		if err != nil {
-			d.logger.Err(err).Msg("dashboard starting")
-
-			return fiber.ErrInternalServerError
-		}
-
-		return c.JSON(dashboardData)
+		return c.JSON(fiber.Map{
+			"id":       user.ID,
+			"password": user.DashboardPassword,
+		})
 	}
 }
 

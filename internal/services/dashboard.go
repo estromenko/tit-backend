@@ -2,140 +2,229 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
+	"math/rand"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
+	"github.com/tutorin-tech/tit-backend/internal/core"
+	"github.com/tutorin-tech/tit-backend/internal/models"
+	coreV1 "k8s.io/api/core/v1"
+	networkingV1 "k8s.io/api/networking/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	typedCoreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typedNetworkingV1 "k8s.io/client-go/kubernetes/typed/networking/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/pointer"
 )
 
-var ErrDashboardIsStopped = errors.New("dashboard is stopped")
+const (
+	dashboardPort   = 8888
+	passwordLetters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	passwordLength  = 32
+)
 
 type DashboardData struct {
-	Port     uint16 `json:"port"`
 	Password string `json:"password"`
 }
 
 type DashboardService struct {
-	dockerClient *client.Client
+	db              *core.Database
+	conf            *core.Config
+	clientSet       *kubernetes.Clientset
+	podsClient      typedCoreV1.PodInterface
+	servicesClient  typedCoreV1.ServiceInterface
+	ingressesClient typedNetworkingV1.IngressInterface
 }
 
-func NewDashboardService() (*DashboardService, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func NewDashboardService(db *core.Database, conf *core.Config) (*DashboardService, error) {
+	var (
+		clientConfig *rest.Config
+		err          error
+	)
+
+	if conf.KubernetesUseInClusterConfig {
+		clientConfig, err = rest.InClusterConfig()
+	} else {
+		clientConfig, err = clientcmd.BuildConfigFromFlags("", conf.KubernetesConfigPath)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	return &DashboardService{dockerClient}, nil
-}
-
-func (d *DashboardService) getPasswordFromContainer(name string) (string, error) {
-	command := exec.Command("docker", "exec", name, "cat", "/password.txt")
-
-	output, err := command.CombinedOutput()
+	clientSet, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	password := strings.ReplaceAll(string(output), "\n", "")
+	podsClient := clientSet.CoreV1().Pods(conf.KubernetesDashboardNamespace)
+	servicesClient := clientSet.CoreV1().Services(conf.KubernetesDashboardNamespace)
+	ingressesClient := clientSet.NetworkingV1().Ingresses(conf.KubernetesDashboardNamespace)
 
-	return password, nil
+	return &DashboardService{
+		db:              db,
+		conf:            conf,
+		clientSet:       clientSet,
+		podsClient:      podsClient,
+		servicesClient:  servicesClient,
+		ingressesClient: ingressesClient,
+	}, nil
 }
 
-func (d *DashboardService) StartDashboard(ctx context.Context, userID uint64) (*DashboardData, error) {
-	response, err := d.dockerClient.ContainerCreate(
-		ctx,
-		&container.Config{
-			Image:        "tit-dashboard:latest",
-			ExposedPorts: nat.PortSet{"5900": {}},
-		},
-		&container.HostConfig{
-			AutoRemove: true,
-			PortBindings: nat.PortMap{
-				"5900": {{HostIP: "0.0.0.0", HostPort: "0"}},
+func (d *DashboardService) createPodForUser(user *models.User) *coreV1.Pod {
+	resourceName := fmt.Sprintf("tit-dashboard-%d", user.ID)
+
+	return &coreV1.Pod{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name: resourceName,
+			Labels: map[string]string{
+				"app": resourceName,
 			},
 		},
-		&network.NetworkingConfig{},
-		nil,
-		fmt.Sprintf("tit_dashboard_%d", userID),
-	)
-	if err != nil {
-		return nil, err
+		Spec: coreV1.PodSpec{
+			TerminationGracePeriodSeconds: pointer.Int64(0),
+			Containers: []coreV1.Container{
+				{
+					Name:  "dashboard",
+					Image: d.conf.DashboardImage,
+					Env: []coreV1.EnvVar{
+						{Name: "PASSWORD", Value: user.DashboardPassword},
+					},
+					Ports: []coreV1.ContainerPort{
+						{
+							ContainerPort: dashboardPort,
+						},
+					},
+				},
+			},
+		},
 	}
-
-	err = d.dockerClient.ContainerStart(ctx, response.ID, types.ContainerStartOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	containerData, err := d.dockerClient.ContainerInspect(ctx, response.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	ports := make([]string, 0, len(containerData.HostConfig.PortBindings))
-	for _, v := range containerData.HostConfig.PortBindings {
-		ports = append(ports, v[0].HostPort)
-	}
-
-	port, _ := strconv.Atoi(ports[0])
-
-	password, err := d.getPasswordFromContainer(containerData.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	dashboardData := &DashboardData{
-		Port:     uint16(port),
-		Password: password,
-	}
-
-	return dashboardData, nil
 }
 
-func (d *DashboardService) GetDashboard(ctx context.Context, userID uint64) (*DashboardData, error) {
-	containers, err := d.dockerClient.ContainerList(ctx, types.ContainerListOptions{
-		Filters: filters.NewArgs(filters.KeyValuePair{
-			Key:   "name",
-			Value: fmt.Sprintf("tit_dashboard_%d", userID),
-		}),
-		All: true,
-	})
+func (d *DashboardService) createServiceForUser(user *models.User) *coreV1.Service {
+	resourceName := fmt.Sprintf("tit-dashboard-%d", user.ID)
+
+	return &coreV1.Service{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      resourceName,
+			Namespace: coreV1.NamespaceDefault,
+			Labels: map[string]string{
+				"app": resourceName,
+			},
+		},
+		Spec: coreV1.ServiceSpec{
+			Ports: []coreV1.ServicePort{
+				{
+					Port: dashboardPort,
+					TargetPort: intstr.IntOrString{
+						IntVal: dashboardPort,
+					},
+				},
+			},
+			Selector: map[string]string{
+				"app": resourceName,
+			},
+		},
+	}
+}
+
+func (d *DashboardService) createIngressForUser(user *models.User) *networkingV1.Ingress {
+	resourceName := fmt.Sprintf("tit-dashboard-%d", user.ID)
+	pathTypePrefix := networkingV1.PathTypePrefix
+
+	return &networkingV1.Ingress{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name: resourceName,
+		},
+		Spec: networkingV1.IngressSpec{
+			Rules: []networkingV1.IngressRule{
+				{
+					Host: d.conf.DashboardIngressDomain,
+					IngressRuleValue: networkingV1.IngressRuleValue{
+						HTTP: &networkingV1.HTTPIngressRuleValue{
+							Paths: []networkingV1.HTTPIngressPath{
+								{
+									Path:     fmt.Sprintf("/%d", user.ID),
+									PathType: &pathTypePrefix,
+									Backend: networkingV1.IngressBackend{
+										Service: &networkingV1.IngressServiceBackend{
+											Name: resourceName,
+											Port: networkingV1.ServiceBackendPort{
+												Number: dashboardPort,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (d *DashboardService) generateRandomPassword() string {
+	buffer := make([]byte, passwordLength)
+	for i := range buffer {
+		buffer[i] = passwordLetters[rand.Intn(len(passwordLetters))]
+	}
+
+	return string(buffer)
+}
+
+func (d *DashboardService) StartDashboard(ctx context.Context, user *models.User) error {
+	resourceName := fmt.Sprintf("tit-dashboard-%d", user.ID)
+
+	dashboardPassword := d.generateRandomPassword()
+	user.DashboardPassword = dashboardPassword
+
+	pod := d.createPodForUser(user)
+
+	_, err := d.podsClient.Create(ctx, pod, metaV1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if len(containers) >= 1 {
-		startedContainer := containers[0]
+	service := d.createServiceForUser(user)
 
-		if !strings.Contains(startedContainer.Status, "Up") {
-			return nil, ErrDashboardIsStopped
-		}
+	_, err = d.servicesClient.Create(ctx, service, metaV1.CreateOptions{})
+	if err != nil {
+		_ = d.podsClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
 
-		containerData, err := d.dockerClient.ContainerInspect(ctx, startedContainer.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		password, err := d.getPasswordFromContainer(containerData.Name)
-		if err != nil {
-			return nil, err
-		}
-
-		dashboardData := &DashboardData{
-			Port:     startedContainer.Ports[0].PublicPort,
-			Password: password,
-		}
-
-		return dashboardData, nil
+		return err
 	}
 
-	return nil, ErrDashboardIsStopped
+	ingress := d.createIngressForUser(user)
+
+	_, err = d.ingressesClient.Create(ctx, ingress, metaV1.CreateOptions{})
+	if err != nil {
+		_ = d.podsClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
+		_ = d.servicesClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
+
+		return err
+	}
+
+	_, err = d.db.NewUpdate().
+		Model(user).
+		Where("id = ?", user.ID).
+		Set("dashboard_password = ?", dashboardPassword).
+		Exec(ctx)
+	if err != nil {
+		_ = d.podsClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
+		_ = d.servicesClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
+		_ = d.ingressesClient.Delete(ctx, resourceName, metaV1.DeleteOptions{})
+
+		return err
+	}
+
+	return err
+}
+
+func (d *DashboardService) IsDashboardRunning(ctx context.Context, user *models.User) bool {
+	_, err := d.ingressesClient.Get(ctx, fmt.Sprintf("tit-dashboard-%d", user.ID), metaV1.GetOptions{})
+
+	return err == nil
 }
