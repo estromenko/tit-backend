@@ -12,11 +12,11 @@ func getErrorMessageForEnv(key string, value string) string {
 }
 
 func GetEnv(key string) string {
-	if key := os.Getenv(key); key != "" {
-		return key
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
 
-	log.Fatal("SECRET_KEY environment variable must be provided")
+	log.Fatalf("%s environment variable must be provided", key)
 
 	return ""
 }
