@@ -1,10 +1,6 @@
 #!/bin/bash
 
-RANDOM_STRING="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 10 ; echo '')"
-
-export PASSWORD="${RANDOM_STRING}"
-
-echo "${PASSWORD}" > /password.txt
+export PASSWORD="${PASSWORD}"
 
 Xvfb :0 &
 
