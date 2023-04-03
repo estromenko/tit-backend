@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.41.0
 	github.com/gofiber/jwt/v3 v3.3.5
 	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/google/uuid v1.1.2
 	github.com/matthewhartstonge/argon2 v0.3.2
 	github.com/rs/zerolog v1.28.0
 	github.com/uptrace/bun v1.1.9

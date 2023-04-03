@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"math/rand"
 
+	"github.com/google/uuid"
 	"github.com/tutorin-tech/tit-backend/internal/core"
 	"github.com/tutorin-tech/tit-backend/internal/models"
 	coreV1 "k8s.io/api/core/v1"
@@ -19,11 +19,7 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-const (
-	dashboardPort   = 8888
-	passwordLetters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	passwordLength  = 32
-)
+const dashboardPort = 8888
 
 type DashboardData struct {
 	Password string `json:"password"`
@@ -167,12 +163,7 @@ func (d *DashboardService) createIngressForUser(user *models.User) *networkingV1
 }
 
 func (d *DashboardService) generateRandomPassword() string {
-	buffer := make([]byte, passwordLength)
-	for i := range buffer {
-		buffer[i] = passwordLetters[rand.Intn(len(passwordLetters))]
-	}
-
-	return string(buffer)
+	return uuid.New().String()
 }
 
 func (d *DashboardService) StartDashboard(ctx context.Context, user *models.User) error {
