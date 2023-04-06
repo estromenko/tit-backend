@@ -45,6 +45,7 @@ func Run() {
 	app.Mount("/api/dashboard", controllers.NewDashboardController(
 		db, log, userService, dashboardService, conf,
 	))
+	app.Mount("/api/tutorials", controllers.NewTutorialsController(db, conf, log, userService))
 
 	address := fmt.Sprintf(":%d", conf.Port)
 

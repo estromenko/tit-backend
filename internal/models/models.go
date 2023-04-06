@@ -15,3 +15,11 @@ type User struct {
 	Password string `bun:"-" json:"password,omitempty" validate:"required,min=8,max=256"`
 	Token    string `bun:"-" json:"token,omitempty"`
 }
+
+type Tutorial struct {
+	bun.BaseModel `bun:"table:tutorials,alias:tuts"`
+
+	ID      uint64 `bun:"id,pk,autoincrement" json:"id"`
+	Name    string `bun:"name,unique,notnull" json:"name"`
+	Content string `bun:"content,notnull" json:"content"`
+}
