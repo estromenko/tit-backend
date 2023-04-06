@@ -42,7 +42,7 @@ func NewWhoAmIController(
 	app.Use(middleware.NewRequireAuth(conf))
 	app.Use(middleware.NewIsActive(db, logger))
 
-	app.Get("/whoami", controller.whoAmI())
+	app.Get("/", controller.whoAmI())
 
 	return app
 }
