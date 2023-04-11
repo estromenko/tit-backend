@@ -6,7 +6,9 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/tutorin-tech/tit-backend/internal/core"
+	"github.com/tutorin-tech/tit-backend/internal/middleware"
 	"github.com/tutorin-tech/tit-backend/internal/models"
 	"github.com/tutorin-tech/tit-backend/internal/services"
 )
@@ -144,16 +146,84 @@ func (a *authController) registration() fiber.Handler {
 	}
 }
 
+func (a *authController) resetPassword() fiber.Handler {
+	type request struct {
+		Password    string `json:"password" validate:"required"`
+		NewPassword string `json:"newPassword" validate:"required,min=8,max=256"`
+	}
+
+	return func(c *fiber.Ctx) error {
+		requestData := new(request)
+		_ = c.BodyParser(requestData)
+
+		validate := validator.New()
+		if err := validate.Struct(requestData); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		token, _ := c.Locals("user").(*jwt.Token)
+
+		user, err := a.userService.GetUserByToken(c.UserContext(), token)
+		if err != nil || user == nil {
+			a.logger.Err(err).Msg("dashboard user selecting")
+
+			return fiber.ErrInternalServerError
+		}
+
+		hashedPassword, err := a.userService.HashPassword(requestData.Password)
+		if err != nil {
+			a.logger.Err(err).Msg("reset password hashing")
+
+			return fiber.ErrInternalServerError
+		}
+
+		if user.PasswordHash != hashedPassword {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "wrong password",
+			})
+		}
+
+		newHashedPassword, err := a.userService.HashPassword(requestData.NewPassword)
+		if err != nil {
+			a.logger.Err(err).Msg("reset new password hashing")
+
+			return fiber.ErrInternalServerError
+		}
+
+		_, err = a.db.NewUpdate().
+			Model(user).
+			Set("password_hash = ?", newHashedPassword).
+			WherePK().
+			Exec(c.UserContext())
+		if err != nil {
+			a.logger.Err(err).Msg("reset password saving")
+
+			return fiber.ErrInternalServerError
+		}
+
+		return c.JSON(fiber.Map{
+			"message": "password changed successfully",
+		})
+	}
+}
+
 func NewAuthController(
 	db *core.Database,
 	logger *core.Logger,
 	userService *services.UserService,
+	conf *core.Config,
 ) *fiber.App {
 	controller := authController{db, logger, userService}
 
 	app := fiber.New()
 	app.Post("/login", controller.login())
 	app.Post("/registration", controller.registration())
+
+	app.Use(middleware.NewRequireAuth(conf))
+	app.Use(middleware.NewIsActive(db, logger))
+	app.Post("/reset-password", controller.resetPassword())
 
 	return app
 }

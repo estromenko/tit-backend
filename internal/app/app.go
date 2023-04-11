@@ -40,7 +40,7 @@ func Run() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
-	app.Mount("/auth", controllers.NewAuthController(db, log, userService))
+	app.Mount("/auth", controllers.NewAuthController(db, log, userService, conf))
 	app.Mount("/api/whoami", controllers.NewWhoAmIController(db, conf, log, userService))
 	app.Mount("/api/dashboard", controllers.NewDashboardController(
 		db, log, userService, dashboardService, conf,
