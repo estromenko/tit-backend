@@ -133,8 +133,18 @@ func (d *DashboardService) createIngressForUser(user *models.User) *networkingV1
 	return &networkingV1.Ingress{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name: resourceName,
+			Annotations: map[string]string{
+				"traefik.ingress.kubernetes.io/router.entrypoints": "web,websecure",
+				"cert-manager.io/cluster-issuer":                   d.conf.DashboardTLSClusterIssuer,
+			},
 		},
 		Spec: networkingV1.IngressSpec{
+			TLS: []networkingV1.IngressTLS{
+				{
+					Hosts:      []string{d.conf.DashboardIngressDomain},
+					SecretName: d.conf.DashboardIngressTLSSecretName,
+				},
+			},
 			Rules: []networkingV1.IngressRule{
 				{
 					Host: d.conf.DashboardIngressDomain,
