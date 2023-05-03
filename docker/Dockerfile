@@ -1,6 +1,6 @@
 FROM golang:1.18-alpine3.17 AS builder
 
-COPY .. /tit-backend
+COPY . /tit-backend
 
 RUN apk add make \
  && cd /tit-backend \

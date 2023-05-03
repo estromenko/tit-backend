@@ -83,8 +83,19 @@ $ make dev
 
 ### Production
 
-To deploy the app in production environment you should use prepared `docker-compose.yml` file:
+To deploy the app in production environment you should use werf
+(Installation instruction [link](https://werf.io/documentation/v1.2/#installing-werf)).
+
+To build and deploy app use command below:
 ```bash
-$ cd docker
-$ docker-compose up -d --build
+$ werf converge --repo registry.tutorin.tech/tit-backend --env prod
+```
+
+To override default configuration you can use `--set` flags or custom `values.yaml` file:
+```bash
+$ werf converge --repo registry.tutorin.tech/tit-backend --env prod \
+    --set env.PG_HOST=localhost --set env.PG_NAME=postgres
+$ # Alternatively
+$ werf converge --repo registry.tutorin.tech/tit-backend --env prod \
+    --values /path/to/custom/values.yaml
 ```

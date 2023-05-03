@@ -1,0 +1,10 @@
+project: tit-backend
+configVersion: 1
+---
+image: api
+dockerfile: docker/Dockerfile
+context: .
+---
+image: dashboard
+dockerfile: Dockerfile
+context: docker/dashboard

@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tit-backend
+  labels:
+    name: tit-backend
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: tit-backend-letsencrypt
+spec:
+  tls:
+  - secretName: tit-backend-tls
+    hosts:
+    - {{ .Values.domain }}
+  rules:
+  - host: {{ .Values.domain }}
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: tit-backend
+            port:
+              number: 3000

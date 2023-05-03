@@ -1,0 +1,10 @@
+image: registry.tutorin.tech/tit-backend:latest
+replicas: 2
+domain: api.tutorin.tech
+issuerEmail: estromenko23@gmail.com
+env:
+  DEBUG: "false"
+  SECRET_KEY: secret
+  DASHBOARD_INGRESS_DOMAIN: dashboard.tutorin.tech
+  DASHBOARD_INGRESS_TLS_SECRET_NAME: tit-dashboard-tls
+  DASHBOARD_TLS_CLUSTER_ISSUER: tit-dashboard-letsencrypt
