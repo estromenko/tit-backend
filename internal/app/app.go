@@ -40,6 +40,12 @@ func Run() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"ping": "pong",
+		})
+	})
+
 	app.Mount("/auth", controllers.NewAuthController(db, log, userService, conf))
 	app.Mount("/api/whoami", controllers.NewWhoAmIController(db, conf, log, userService))
 	app.Mount("/api/dashboard", controllers.NewDashboardController(
