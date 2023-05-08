@@ -9,8 +9,6 @@ RUN apk add make \
 
 FROM alpine:3.17
 
-RUN apk add docker
-
 COPY --from=builder /tit-backend/.tmp/main /usr/local/bin/tit-backend
 
 COPY --from=builder /tit-backend/migrations /migrations
