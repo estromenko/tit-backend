@@ -81,6 +81,16 @@ file in project root.
 $ make dev
 ```
 
+### Create superuser
+
+To create superuser locally use command below:
+
+```bash
+$ make createsuperuser
+```
+
+In production environment `createsuperuser` binary is available from anywhere
+
 ### Production
 
 To deploy the app in production environment you should use werf

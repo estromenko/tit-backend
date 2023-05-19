@@ -2,8 +2,18 @@ all: dev
 
 .PHONY: build
 .SILENT: build
-build:
+build: build-createsuperuser
 	go build -o .tmp/main cmd/tit-backend/main.go
+
+.PHONY: build-createsuperuser
+.SILENT: build-createsuperuser
+build-createsuperuser:
+	go build -o ./.tmp/createsuperuser cmd/createsuperuser/main.go
+
+.PHONY: createsuperuser
+.SILENT: createsuperuser
+createsuperuser: build-createsuperuser
+	eval $$(cat .env) ./.tmp/createsuperuser
 
 .PHONY: dev
 .SILENT: dev

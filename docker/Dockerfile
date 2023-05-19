@@ -11,6 +11,8 @@ FROM alpine:3.17
 
 COPY --from=builder /tit-backend/.tmp/main /usr/local/bin/tit-backend
 
+COPY --from=builder /tit-backend/.tmp/createsupseruser /usr/local/bin/createsuperuser
+
 COPY --from=builder /tit-backend/migrations /migrations
 
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
