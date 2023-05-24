@@ -3,6 +3,8 @@ module github.com/tutorin-tech/tit-backend
 go 1.18
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/gofiber/fiber/v2 v2.41.0
 	github.com/gofiber/jwt/v3 v3.3.5

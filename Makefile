@@ -49,3 +49,8 @@ lint-fix:
 .SILENT: start
 start:
 	eval $$(cat .env) ./.tmp/main
+
+.PHONY: test
+.SILENT: test
+test:
+	eval $$(cat .env) go test -v -cover ./... | grep -v 'no test files'
