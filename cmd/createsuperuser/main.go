@@ -37,6 +37,7 @@ func main() {
 	user := models.User{
 		Email:        email,
 		IsSuperUser:  true,
+		IsActive:     true,
 		PasswordHash: passwordHash,
 	}
 
