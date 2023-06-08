@@ -2,7 +2,7 @@
 
 export PASSWORD="${PASSWORD}"
 
-Xvfb :0 -screen 0 1288x512x24 &
+Xvfb :0 -screen 0 1288x724x24 &
 
 fluxbox -display :0 &
 fluxbox_pid=$!
