@@ -58,7 +58,7 @@ func (u *UserService) CreateToken(user *models.User) (string, error) {
 }
 
 func (u *UserService) HashPassword(password string) (string, error) {
-	argon := argon2.RecommendedDefaults()
+	argon := argon2.DefaultConfig()
 	argon.Mode = argon2.ModeArgon2i
 
 	hash, err := argon.Hash([]byte(password), []byte(u.conf.SecretKey))
