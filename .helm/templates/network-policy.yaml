@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: dashboard-deny-egress
+  namespace: {{ .Values.env.KUBERNETES_DASHBOARD_NAMESPACE }}
 spec:
   podSelector:
     matchLabels:

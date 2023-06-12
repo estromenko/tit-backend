@@ -8,3 +8,4 @@ env:
   DASHBOARD_INGRESS_DOMAIN: dashboard.tutorin.tech
   DASHBOARD_INGRESS_TLS_SECRET_NAME: tit-dashboard-tls
   DASHBOARD_TLS_CLUSTER_ISSUER: tit-dashboard-letsencrypt
+  KUBERNETES_DASHBOARD_NAMESPACE: default
