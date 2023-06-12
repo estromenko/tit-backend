@@ -76,7 +76,8 @@ func (d *DashboardService) createPodForUser(user *models.User) *coreV1.Pod {
 		ObjectMeta: metaV1.ObjectMeta{
 			Name: resourceName,
 			Labels: map[string]string{
-				"app": resourceName,
+				"tier": "dashboard",
+				"app":  resourceName,
 			},
 		},
 		Spec: coreV1.PodSpec{

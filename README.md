@@ -45,11 +45,24 @@ $ docker tag tit-dashboard:latest localhost:5000/tit-dashboard:latest
 $ docker push localhost:5000/tit-dashboard:latest
 ```
 
-- Setup kubernetes cluster and connect image registry to it:
+- Install k3s
 
-It is recommended to use [k3s](https://k3s.io) for convenience 
-([Installation guide](https://docs.k3s.io/quick-start#install-script),
-[Registry configuration guide](https://docs.k3s.io/installation/private-registry))
+IMPORTANT NOTE: default k3s setup is provided with flannel CNI,
+which does not support network policies required for disabling networking inside dashboards.
+Thats why we use `calico` as alternative.
+
+Install k3s excluding flannel CNI using command below:
+
+```bash
+$ curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --cluster-cidr=192.168.0.0/16 --disable-network-policy" sh -
+```
+
+Then install calico:
+
+```bash
+$ k3s kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/tigera-operator.yaml
+$ k3s kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/custom-resources.yaml
+```
 
 Add following content to `/etc/rancher/k3s/registries.yaml` file:
 ```yaml
