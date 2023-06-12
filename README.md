@@ -106,6 +106,12 @@ In production environment `createsuperuser` binary is available from anywhere
 
 ### Production
 
+Before deployment make sure `cert-manager` installed in your cluster.
+If it is not, use command below:
+```bash
+$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+```
+
 To deploy the app in production environment you should use werf
 (Installation instruction [link](https://werf.io/documentation/v1.2/#installing-werf)).
 
